@@ -68,7 +68,9 @@ func newHTTP3Server(ctx context.Context, name string, config *static.EntryPoint,
 		Handler:   httpsServer.Server.(*http.Server).Handler,
 		TLSConfig: &tls.Config{GetConfigForClient: h3.getTLSConfigForClient},
 		QUICConfig: &quic.Config{
-			Allow0RTT: false,
+			Allow0RTT:               false,
+			InitialPacketSize:       config.HTTP3.InitialPacketSize,
+			DisablePathMTUDiscovery: config.HTTP3.DisablePathMTUDiscovery,
 		},
 		ConnContext: func(ctx context.Context, c *quic.Conn) context.Context {
 			tlsOptionsName, err := h3.getTLSOptionsName(c)

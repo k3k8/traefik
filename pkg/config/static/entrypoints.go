@@ -129,7 +129,9 @@ func (c *HTTP2Config) SetDefaults() {
 
 // HTTP3Config is the HTTP3 configuration of an entry point.
 type HTTP3Config struct {
-	AdvertisedPort int `description:"UDP port to advertise, on which HTTP/3 is available." json:"advertisedPort,omitempty" toml:"advertisedPort,omitempty" yaml:"advertisedPort,omitempty" export:"true"`
+	AdvertisedPort          int    `description:"UDP port to advertise, on which HTTP/3 is available." json:"advertisedPort,omitempty" toml:"advertisedPort,omitempty" yaml:"advertisedPort,omitempty" export:"true"`
+	InitialPacketSize       uint16 `description:"Initial (and minimum) QUIC packet size in bytes. Values below 1200 are clamped to 1200 by the QUIC library. Useful for paths with a hard MTU limit (e.g. Tailscale: 1280). Defaults to 1280 when unset." json:"initialPacketSize,omitempty" toml:"initialPacketSize,omitempty" yaml:"initialPacketSize,omitempty" export:"true"`
+	DisablePathMTUDiscovery bool   `description:"Disable QUIC Path MTU Discovery (RFC 8899). Set to true to prevent black-hole issues on paths that silently drop oversized UDP datagrams, such as Tailscale tunnels." json:"disablePathMTUDiscovery,omitempty" toml:"disablePathMTUDiscovery,omitempty" yaml:"disablePathMTUDiscovery,omitempty" export:"true"`
 }
 
 // Redirections is a set of redirection for an entry point.
