@@ -78,7 +78,9 @@ func newHTTP3Server(ctx context.Context, name string, config *static.EntryPoint,
 		MaxHeaderBytes: config.HTTP.MaxHeaderBytes,
 		IdleTimeout:    time.Duration(config.Transport.RespondingTimeouts.IdleTimeout),
 		QUICConfig: &quic.Config{
-			Allow0RTT: false,
+			Allow0RTT:               false,
+			InitialPacketSize:       config.HTTP3.InitialPacketSize,
+			DisablePathMTUDiscovery: config.HTTP3.DisablePathMTUDiscovery,
 		},
 		ConnContext: func(ctx context.Context, c *quic.Conn) context.Context {
 			// This adds an empty struct in order to store a RoundTripper in the ConnContext in case of Kerberos or NTLM.
