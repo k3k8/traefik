@@ -34,21 +34,41 @@ jobs:
           go-version-file: '.go-version'
           cache: true
 
-      - name: Build binary (linux/amd64)
+      # Cross-compiled on the runner (no emulation), one binary per target arch.
+      # The Dockerfile picks the right one up via COPY ./dist/$TARGETPLATFORM/traefik.
+      - name: Build binaries (linux/amd64, linux/arm64)
         env:
           CGO_ENABLED: '0'
           GOOS: linux
-          GOARCH: amd64
         run: |
-          mkdir -p dist/linux/amd64
-          go build \
-            -ldflags "-s -w \
-              -X github.com/traefik/traefik/v3/pkg/version.Version=$(git describe --tags --always) \
-              -X github.com/traefik/traefik/v3/pkg/version.Codename=cheddar \
-              -X github.com/traefik/traefik/v3/pkg/version.BuildDate=$(date -u '+%Y-%m-%d_%I:%M:%S%p')" \
-            -installsuffix nocgo \
-            -o ./dist/linux/amd64/traefik \
-            ./cmd/traefik
+          # Computed once so every arch reports the same version and build date.
+          LDFLAGS="-s -w \
+            -X github.com/traefik/traefik/v3/pkg/version.Version=$(git describe --tags --always) \
+            -X github.com/traefik/traefik/v3/pkg/version.Codename=cheddar \
+            -X github.com/traefik/traefik/v3/pkg/version.BuildDate=$(date -u '+%Y-%m-%d_%I:%M:%S%p')"
+
+          for arch in amd64 arm64; do
+            echo "::group::build linux/${arch}"
+            mkdir -p "dist/linux/${arch}"
+            GOARCH="${arch}" go build \
+              -ldflags "${LDFLAGS}" \
+              -installsuffix nocgo \
+              -o "./dist/linux/${arch}/traefik" \
+              ./cmd/traefik
+            echo "::endgroup::"
+          done
+
+      # Needed to execute the Dockerfile's `RUN apk add` under linux/arm64
+      # on an amd64 runner. The Go binaries themselves are cross-compiled above,
+      # so only that one small step is emulated.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      # Multi-platform builds require the docker-container driver.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -62,7 +82,7 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/traefik:3.7.10-quic
