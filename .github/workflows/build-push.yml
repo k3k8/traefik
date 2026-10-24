@@ -15,6 +15,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The fork carries no tags, so git describe would fall back to the bare SHA
+      # and the binary would report that as its version.
+      - name: Fetch upstream tags
+        run: git fetch --no-tags https://github.com/traefik/traefik.git '+refs/tags/v3.*:refs/tags/v3.*'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
